@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  principal
+  teacher
+}
+
+enum ContentStatus {
+  pending
+  approved
+  rejected
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+
+  uploadedContents Content[] @relation("Uploader")
+  approvedContents Content[] @relation("Approver")
+
+  @@index([role])
+  @@map("users")
+}
+
+model Content {
+  id          String @id @default(uuid())
+
+  title       String
+  description String?
+  subject     String
+
+  filePath    String
+  fileType    String
+  fileSize    Int
+
+  uploadedById String
+  uploadedBy   User   @relation("Uploader", fields: [uploadedById], references: [id])
+
+  status          ContentStatus @default(pending)
+  rejectionReason String?
+
+  approvedById String?
+  approvedBy   User? @relation("Approver", fields: [approvedById], references: [id])
+
+  approvedAt DateTime?
+
+  startTime           DateTime?
+  endTime             DateTime?
+  rotationDurationMin Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([uploadedById])
+  @@index([status])
+  @@index([subject])
+  @@index([startTime, endTime])
+  @@index([uploadedById, status])
+  @@map("contents")
+}
